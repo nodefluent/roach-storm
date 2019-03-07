@@ -1,0 +1,73 @@
+{
+  "name": "roach-storm",
+  "version": "0.1.0",
+  "description": "Apache Kafka to Google Pub/Sub Gateway, API controlled",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "repository": "git@github.com:nodefluent/roach-storm.git",
+  "author": "Christian Froehlingsdorf <chris@5cf.de>",
+  "license": "SEE LICENSE IN ./LICENSE",
+  "private": false,
+  "scripts": {
+    "tsv": "tsc -v",
+    "prepublishOnly": "yarn build",
+    "build": "yarn lint && rm -rf dist/ && tsc -p tsconfig.json",
+    "_start": "DEBUG=roach:* node dist/example/index.js",
+    "start": "yarn build && yarn _start",
+    "lint": "tslint -c tslint.json -p tsconfig.json",
+    "fix": "tslint -c tslint.json -p tsconfig.json --fix",
+    "pkg:i": "./scripts/self-install.sh",
+    "pkg:u": "./scripts/self-update.sh"
+  },
+  "keywords": [
+    "apache",
+    "kafka",
+    "event",
+    "streaming",
+    "metrics",
+    "stats",
+    "rest",
+    "http",
+    "nodefluent",
+    "http",
+    "gateway",
+    "google",
+    "pub",
+    "sub",
+    "pubsub",
+    "mirror",
+    "transform",
+    "filter"
+  ],
+  "dependencies": {
+    "bluebird": "~3.5.3",
+    "body-parser": "~1.18.3",
+    "commander": "~2.19.0",
+    "cors": "~2.8.5",
+    "debug": "~4.1.1",
+    "express": "~4.16.4",
+    "moment": "~2.24.0",
+    "mongoose": "~5.4.17",
+    "murmurhash": "~0.0.2",
+    "prom-client": "~11.2.1",
+    "sinek": "~6.24.1",
+    "uuid": "~3.3.2"
+  },
+  "devDependencies": {
+    "@types/bluebird": "~3.5.26",
+    "@types/cors": "~2.8.4",
+    "@types/debug": "~4.1.2",
+    "@types/express": "~4.16.1",
+    "@types/mongoose": "~5.3.21",
+    "@types/murmurhash": "~0.0.1",
+    "@types/node": "~11.10.5",
+    "@types/uuid": "~3.4.4",
+    "mocha": "~6.0.2",
+    "tslint": "~5.13.1",
+    "typescript": "~3.3.3333"
+  },
+  "preferGlobal": true,
+  "bin": {
+    "roach-storm": "bin/roach-storm.js"
+  }
+}

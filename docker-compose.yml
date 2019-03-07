@@ -1,0 +1,6 @@
+version: "3.1"
+services:
+  roach:
+    build: .
+    ports:
+      - 1919:1919
