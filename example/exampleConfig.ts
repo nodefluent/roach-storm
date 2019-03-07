@@ -61,6 +61,9 @@ const roachConfig = {
             token3: "*", // any access, also allows to change topic config
         },
     },
+    pubSubConfig: {
+        projectId: "sample-google-cloud-project-id",
+    },
 };
 
 export {

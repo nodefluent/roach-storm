@@ -69,6 +69,7 @@ You will have to provide the following information in the body `{ topic, parseAs
 * `topic` (string) (is required) is the name of the Kafka topic (you can fetch available topics via `GET /api/info/topics/available`)
 * `parseAsJson` (boolean) (default is false) if this is false the message (key and value) fields are passed as Buffers, in case you set this
 to true, the message key will be passed as string (if possible) and the value will be passed as parsed JSON body (if possible).
+* `targetTopic` (string) (is required) is the name for the Google PubSub topic where the message should be published to
 
 If you configure a topic, it will be consumed from earliest.
 
@@ -127,6 +128,7 @@ They will always overwrite the passed configuration file.
 * `KAFKA_SASL_USERNAME="123456"` -> turns into: `config.kafka.consumer.noptions["sasl.username"] = "123456";`
 * `KAFKA_SASL_PASSWORD="123456"` -> turns into: `config.kafka.consumer.noptions["sasl.password"] = "123456";`
 * `ACL_DEFINITIONS="mytoken=topic1,topic2;othertoken=topic3" roach-storm -l "./config.json"` -> turns into: `config.http.access.mytoken = [ "topic1", "topic2" ];`
+* `PUBSUB_PROJECT_ID=my-project-id` -> turns into `options.pubSubConfig.projectId = "123";`
 
 The kafka env values will set consumer and producer at the same time.
 
@@ -135,3 +137,7 @@ The kafka env values will set consumer and producer at the same time.
 Christian Fröhlingsdorf [@chrisfroeh](https://twitter.com/chrisfroeh)
 
 Build with :heart: :pizza: and :coffee: by [nodefluent](https://github.com/nodefluent)
+
+## Disclaimer
+
+This software is not associated with Google.

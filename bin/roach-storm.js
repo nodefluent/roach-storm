@@ -331,6 +331,15 @@ Object.keys(process.env)
             options.kafka.producer.noptions["sasl.password"] = iter.val;
         break;
 
+        case "PUBSUB_PROJECT_ID":
+
+            if(!options.pubSubConfig){
+                options.pubSubConfig = {};
+            }
+
+            options.pubSubConfig.projectId = iter.val;
+        break;
+
         default:
         return;
     }

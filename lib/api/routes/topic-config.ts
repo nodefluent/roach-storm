@@ -66,7 +66,7 @@ const routeTopicConfig = (roachStorm: RoachStorm) => {
         }
 
         try {
-            const { topic, parseAsJson } = req.body;
+            const { topic, parseAsJson, targetTopic } = req.body;
 
             const topicConfig = await topicConfigModel.get(topic);
             if (topicConfig) {
@@ -76,7 +76,7 @@ const routeTopicConfig = (roachStorm: RoachStorm) => {
                 return;
             }
 
-            res.status(202).json(await topicConfigModel.upsert(topic, undefined, parseAsJson));
+            res.status(202).json(await topicConfigModel.upsert(topic, targetTopic, undefined, parseAsJson));
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,
@@ -94,8 +94,8 @@ const routeTopicConfig = (roachStorm: RoachStorm) => {
         }
 
         try {
-            const { topic, parseAsJson } = req.body;
-            res.status(202).json(await topicConfigModel.upsert(topic, undefined, parseAsJson));
+            const { topic, parseAsJson, targetTopic } = req.body;
+            res.status(202).json(await topicConfigModel.upsert(topic, targetTopic, undefined, parseAsJson));
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,
@@ -122,8 +122,8 @@ const routeTopicConfig = (roachStorm: RoachStorm) => {
         try {
 
             await Promise.map(req.body.topics, ((topicConfig: any) => {
-                const { topic, parseAsJson } = topicConfig;
-                return topicConfigModel.upsert(topic, undefined, parseAsJson);
+                const { topic, parseAsJson, targetTopic } = topicConfig;
+                return topicConfigModel.upsert(topic, targetTopic, undefined, parseAsJson);
             }), {concurrency: 1});
 
             res.status(200).json(await topicConfigModel.list());

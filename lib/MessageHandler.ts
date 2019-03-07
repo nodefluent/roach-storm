@@ -1,5 +1,4 @@
 import * as Debug from "debug";
-import * as murmur from "murmurhash";
 import * as moment from "moment";
 const debug = Debug("roach:handler");
 
@@ -9,21 +8,20 @@ import MongoPoller from "./db/MongoPoller";
 import { Metrics } from "./Metrics";
 import { TopicConfig } from "./interfaces/TopicConfig";
 import MongoWrapper from "./db/MongoWrapper";
+import PubSubHandler from "./PubSubHandler";
 
 export default class MessageHandler {
 
     private readonly mongoPoller: MongoPoller;
     private readonly metrics: Metrics;
     private readonly mongoWrapper: MongoWrapper;
+    private readonly pubSubHandler: PubSubHandler;
 
     constructor(roachStorm: RoachStorm) {
         this.mongoPoller = roachStorm.mongoPoller;
         this.metrics = roachStorm.metrics;
         this.mongoWrapper = roachStorm.mongoWrapper;
-    }
-
-    private hash(value: string): number {
-        return murmur.v3(value, 0);
+        this.pubSubHandler = roachStorm.pubSubHandler;
     }
 
     public findConfigForTopic(topic: string): TopicConfig | null {
@@ -121,9 +119,7 @@ export default class MessageHandler {
             processedAt: timeOfStoring,
         };
 
-       // TODO: produce to pub sub
-
-        debug(parsedMessage);
+        await this.pubSubHandler.publish(topicConfig.targetTopic, JSON.stringify(parsedMessage));
 
         const duration = Date.now() - startTime;
         this.metrics.set("processed_message_ms", duration);

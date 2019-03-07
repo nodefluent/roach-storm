@@ -8,6 +8,7 @@ import HttpServer from "./api/HttpServer";
 import MessageHandler from "./MessageHandler";
 import Consumer from "./kafka/Consumer";
 import { Metrics } from "./Metrics";
+import PubSubHandler from "./PubSubHandler";
 
 import { RoachConfig } from "./interfaces";
 
@@ -24,6 +25,7 @@ export default class RoachStorm {
     public readonly mongoPoller: MongoPoller;
     public readonly discovery: Discovery;
     public readonly metrics: Metrics;
+    public readonly pubSubHandler: PubSubHandler;
 
     private alive: boolean = true;
     private ready: boolean = false;
@@ -41,7 +43,7 @@ export default class RoachStorm {
         this.mongoPoller = new MongoPoller(this.mongoWrapper, this.metrics);
         this.httpServer = new HttpServer(this.config.http, this);
         this.consumer = new Consumer(this.config.kafka, this);
-
+        this.pubSubHandler = new PubSubHandler(this.config);
         this.messageHandler = new MessageHandler(this);
     }
 

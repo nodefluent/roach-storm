@@ -7,4 +7,5 @@ export interface RoachConfig {
     discovery: DiscoveryConfig;
     mongo: MongoConfig;
     http: HttpConfig;
+    pubSubConfig: any;
 }

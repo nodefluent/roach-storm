@@ -26,6 +26,7 @@ export class TopicConfigModel {
             topic: String,
             timestamp: Number,
             parseAsJson: Boolean,
+            targetTopic: String,
         };
 
         const schema = new schemaConstructor(schemaDefinition);
@@ -63,6 +64,7 @@ export class TopicConfigModel {
                     topic: topicConfig.topic,
                     timestamp: topicConfig.timestamp,
                     parseAsJson: topicConfig.parseAsJson,
+                    targetTopic: topicConfig.targetTopic,
                 };
 
                 return responseTopicConfig;
@@ -70,12 +72,14 @@ export class TopicConfigModel {
         });
     }
 
-    public upsert(topic: string, timestamp: number = Date.now(), parseAsJson: boolean = false): Promise<TopicConfig> {
+    public upsert(topic: string, targetTopic: string,
+                  timestamp: number = Date.now(), parseAsJson: boolean = false): Promise<TopicConfig> {
 
         const document = {
             topic,
             timestamp,
             parseAsJson,
+            targetTopic,
         };
 
         const query = {

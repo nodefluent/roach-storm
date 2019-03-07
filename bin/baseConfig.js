@@ -56,4 +56,7 @@ module.exports = {
         port: 1919,
         access: "*",
     },
+    pubSubConfig: {
+        projectId: "base-google-cloud-project-id",
+    },
 };
