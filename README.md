@@ -73,7 +73,9 @@ to true, the message key will be passed as string (if possible) and the value wi
 
 If you configure a topic, it will be consumed from earliest.
 
-Please note that any changes on the topic-config resource will take a few seconds to be polled and applied to all roach-storm instances.
+**Please note** that any changes on the topic-config resource will take a few seconds to be polled and applied to all roach-storm instances.
+
+**Please note** that roach-storm will not create PubSub topics for you, you will have to create the topics beforehand.
 
 ## Setup Info
 
