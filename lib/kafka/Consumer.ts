@@ -30,6 +30,7 @@ export default class Consumer {
 
     private async processMessagesWithRetry(messages: KafkaMessage[], attempts = 0): Promise<boolean> {
         try {
+            debug("Processing messages", messages.length, "with attempt", attempts);
             attempts++;
             await Promise.all(messages.map((message: KafkaMessage) =>
                 this.roachStorm.messageHandler.handleMessage(message)));
