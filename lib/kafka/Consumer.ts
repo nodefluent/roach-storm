@@ -28,16 +28,17 @@ export default class Consumer {
         }, 45000);
     }
 
-    private async processMessageWithRetry(message: KafkaMessage, attempts = 0): Promise<boolean> {
+    private async processMessagesWithRetry(messages: KafkaMessage[], attempts = 0): Promise<boolean> {
         try {
             attempts++;
-            await this.roachStorm.messageHandler.handleMessage(message);
+            await Promise.all(messages.map((message: KafkaMessage) =>
+                this.roachStorm.messageHandler.handleMessage(message)));
             return true;
         } catch (error) {
             debug("Failed to process kafka message, attempt", attempts, "with error", error.message);
             return (new Promise((resolve) => setTimeout(resolve, attempts * 1000)))
                 .then(() => {
-                    return this.processMessageWithRetry(message, attempts);
+                    return this.processMessagesWithRetry(messages, attempts);
                 });
         }
     }
@@ -49,9 +50,16 @@ export default class Consumer {
         this.consumer = new NConsumer([], this.config.consumer);
 
         await this.consumer.connect();
-        this.consumer.consume(async (message, callback) => {
-            this.consumedLately++;
-            await this.processMessageWithRetry(message);
+        this.consumer.consume(async (messages: any, callback) => {
+
+            if (!Array.isArray(messages)) {
+                messages = [messages];
+                this.consumedLately++;
+            } else {
+                this.consumedLately += messages.length;
+            }
+
+            await this.processMessagesWithRetry(messages);
             callback(null);
         }, false, false, this.config.batchOptions);
 

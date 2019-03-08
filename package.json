@@ -1,6 +1,6 @@
 {
   "name": "roach-storm",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Apache Kafka to Google Pub/Sub Gateway, API controlled",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -40,7 +40,7 @@
     "filter"
   ],
   "dependencies": {
-    "@google-cloud/pubsub": "^0.27.0",
+    "@google-cloud/pubsub": "^0.27.1",
     "bluebird": "~3.5.3",
     "body-parser": "~1.18.3",
     "commander": "~2.19.0",
@@ -50,7 +50,7 @@
     "moment": "~2.24.0",
     "mongoose": "~5.4.17",
     "prom-client": "~11.2.1",
-    "sinek": "~6.24.1"
+    "sinek": "~6.26.0"
   },
   "devDependencies": {
     "@types/bluebird": "~3.5.26",
