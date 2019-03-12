@@ -27,6 +27,7 @@ export class TopicConfigModel {
             timestamp: Number,
             parseAsJson: Boolean,
             targetTopic: String,
+            chunkSize: Number,
         };
 
         const schema = new schemaConstructor(schemaDefinition);
@@ -72,7 +73,7 @@ export class TopicConfigModel {
         });
     }
 
-    public upsert(topic: string, targetTopic: string,
+    public upsert(topic: string, targetTopic: string, chunkSize: number = 1,
                   timestamp: number = Date.now(), parseAsJson: boolean = false): Promise<TopicConfig> {
 
         const document = {
@@ -80,6 +81,7 @@ export class TopicConfigModel {
             timestamp,
             parseAsJson,
             targetTopic,
+            chunkSize,
         };
 
         const query = {

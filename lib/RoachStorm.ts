@@ -43,7 +43,7 @@ export default class RoachStorm {
         this.mongoPoller = new MongoPoller(this.mongoWrapper, this.metrics);
         this.httpServer = new HttpServer(this.config.http, this);
         this.consumer = new Consumer(this.config.kafka, this);
-        this.pubSubHandler = new PubSubHandler(this.config);
+        this.pubSubHandler = new PubSubHandler(this.config, this);
         this.messageHandler = new MessageHandler(this);
     }
 

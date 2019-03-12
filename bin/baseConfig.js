@@ -23,6 +23,7 @@ module.exports = {
             commitSync: false,
             noBatchCommits: false,
             manualBatching: true,
+            sortedManualBatch: true,
         },
     },
     discovery: {

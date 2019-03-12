@@ -1,6 +1,13 @@
 # roach-storm CHANGELOG
 
-## 2019-03-07, Version 0.3.0
+## 2019-03-12, Version 0.5.0
+
+* upgraded dependencies
+* **BREAKING** added new way of dealing with message batches by sorting and chunking them based on topicPartitions
+* added chunkSize to topicConfig
+* added new metrics
+
+## 2019-03-07, Version 0.3.0-0.4.0
 
 * added batching for kafka messages
 

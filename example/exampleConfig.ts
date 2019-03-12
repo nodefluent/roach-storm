@@ -23,6 +23,7 @@ const roachConfig = {
             commitSync: false,
             noBatchCommits: false,
             manualBatching: true,
+            sortedManualBatch: true,
         },
     },
     discovery: {

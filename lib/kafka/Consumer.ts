@@ -1,9 +1,10 @@
 import * as Debug from "debug";
 const debug = Debug("roach:consumer");
 
-import { NConsumer, KafkaMessage } from "sinek";
+import { NConsumer, SortedMessageBatch } from "sinek";
 import RoachStorm from "../RoachStorm";
 import { KafkaConfig } from "../interfaces";
+import MessageHandler from "../MessageHandler";
 
 export default class Consumer {
 
@@ -28,12 +29,12 @@ export default class Consumer {
         }, 45000);
     }
 
-    private async processMessagesWithRetry(messages: KafkaMessage[], attempts = 0): Promise<boolean> {
+    private async processMessagesWithRetry(messages: SortedMessageBatch, attempts = 0):
+        Promise<boolean> {
         try {
             debug("Processing messages", messages.length, "with attempt", attempts);
             attempts++;
-            await Promise.all(messages.map((message: KafkaMessage) =>
-                this.roachStorm.messageHandler.handleMessage(message)));
+            await this.roachStorm.messageHandler.handleSortedMessageBatch(messages);
             return true;
         } catch (error) {
             debug("Failed to process kafka message, attempt", attempts, "with error", error.message);
@@ -51,16 +52,14 @@ export default class Consumer {
         this.consumer = new NConsumer([], this.config.consumer);
 
         await this.consumer.connect();
+
+        this.consumer.on("message", (message) => {
+            this.roachStorm.metrics.inc(`message_incoming_${(MessageHandler.cleanTopicNameForMetrics(message.topic))}`);
+            this.consumedLately++;
+        });
+
         this.consumer.consume(async (messages: any, callback) => {
-
-            if (!Array.isArray(messages)) {
-                messages = [messages];
-                this.consumedLately++;
-            } else {
-                this.consumedLately += messages.length;
-            }
-
-            await this.processMessagesWithRetry(messages);
+            await this.processMessagesWithRetry(messages as SortedMessageBatch);
             callback(null);
         }, false, false, this.config.batchOptions);
 

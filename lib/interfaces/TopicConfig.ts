@@ -3,4 +3,5 @@ export interface TopicConfig {
     timestamp: number;
     parseAsJson: boolean;
     targetTopic: string;
+    chunkSize?: number;
 }

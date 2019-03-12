@@ -3,12 +3,13 @@ import * as moment from "moment";
 const debug = Debug("roach:handler");
 
 import RoachStorm from "./RoachStorm";
-import { KafkaMessage } from "sinek";
+import { KafkaMessage, SortedMessageBatch } from "sinek";
 import MongoPoller from "./db/MongoPoller";
 import { Metrics } from "./Metrics";
 import { TopicConfig } from "./interfaces/TopicConfig";
 import MongoWrapper from "./db/MongoWrapper";
 import PubSubHandler from "./PubSubHandler";
+import { ParsedMessage } from "./interfaces";
 
 export default class MessageHandler {
 
@@ -40,24 +41,69 @@ export default class MessageHandler {
         return topic.replace(/-/g, "_");
     }
 
-    public async handleMessage(message: KafkaMessage, fromStream: boolean = true): Promise<boolean> {
+    public handleSortedMessageBatch(sortedBatch: SortedMessageBatch): Promise<string[][][]> {
+
+        // parallel processing on topic level
+        const topicPromises = Object.keys(sortedBatch).map((topic: string) => {
+
+            const topicConfig = this.findConfigForTopic(topic);
+            if (!topicConfig) {
+                this.metrics.inc("processed_messages_failed_no_config");
+                throw new Error("topic configuration missing for topic " + topic);
+            }
+
+            // parallel processing on partition level
+            const partitionPromises = Object.keys(sortedBatch[topic]).map((partition: string) => {
+
+                // sequential processing on message level (to respect ORDER)
+                const messages = sortedBatch[topic][partition]
+                    .map((message) => this.handleMessage(message, topicConfig))
+                    .filter((message) => !!message) as ParsedMessage[];
+
+                return this.publishMessagesChunkified(messages, topicConfig.targetTopic, topicConfig.chunkSize);
+            });
+
+            // wait until all partitions of this topic are processed and commit its offset
+            return Promise.all(partitionPromises);
+        });
+
+        return Promise.all(topicPromises);
+    }
+
+    private publishMessagesChunkified(messages: ParsedMessage[], targetTopic: string, chunkSize: number = 1):
+        Promise<string[]> {
+
+        if (!messages.length) {
+            return Promise.resolve([]);
+        }
+
+        let index = 0;
+        let chunk: ParsedMessage[] = [];
+        const chunkPromises = [];
+        for (const message of messages) {
+            index++;
+            chunk.push(message);
+            if (chunk.length && (chunk.length >= chunkSize || index >= messages.length - 1)) {
+                chunkPromises.push(this.pubSubHandler.publish(targetTopic, JSON.stringify(chunk)));
+                chunk = [];
+            }
+        }
+
+        return Promise.all(chunkPromises);
+    }
+
+    private handleMessage(message: KafkaMessage, topicConfig: TopicConfig): ParsedMessage | null {
 
         this.metrics.inc("processed_messages");
 
         if (!message || !message.topic || typeof message.topic !== "string" || typeof message.partition !== "number") {
+            this.metrics.inc(`message_dropped_${MessageHandler.cleanTopicNameForMetrics(message.topic)}`);
             debug("Dropping message because of bad format, not an object or no topic", message);
-            return false;
+            return null;
         }
 
         if (!this.mongoWrapper.isConnected()) {
             throw new Error("MongoDB connection is not established.");
-        }
-
-        const topicConfig = this.findConfigForTopic(message.topic);
-        if (!topicConfig) {
-            this.metrics.inc("processed_messages_failed_no_config");
-            debug("Cannot process message, because no config was found for topic", message.topic);
-            return false;
         }
 
         const startTime = Date.now();
@@ -110,7 +156,7 @@ export default class MessageHandler {
             }
         }
 
-        const parsedMessage: any = {
+        const parsedMessage: ParsedMessage = {
             key: topicConfig.parseAsJson && keyAsString ? keyAsString : keyAsBuffer,
             timestamp: messageHasTimestamp ? (message as any).timestamp : timeOfStoring,
             partition: message.partition,
@@ -119,11 +165,10 @@ export default class MessageHandler {
             processedAt: timeOfStoring,
         };
 
-        await this.pubSubHandler.publish(topicConfig.targetTopic, JSON.stringify(parsedMessage));
-
         const duration = Date.now() - startTime;
         this.metrics.set("processed_message_ms", duration);
         this.metrics.inc("processed_messages_success");
-        return true;
+
+        return parsedMessage;
     }
 }
