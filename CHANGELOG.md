@@ -1,5 +1,11 @@
 # roach-storm CHANGELOG
 
+## 2019-03-14, Version 0.6.0
+
+* **BREAKING** changed the TopicConfig resource
+* added pipes option for multiple pubsub targets
+* added filter option for pipes to select specific messages
+
 ## 2019-03-12, Version 0.5.0
 
 * upgraded dependencies

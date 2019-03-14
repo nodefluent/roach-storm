@@ -1,6 +1,6 @@
 {
   "name": "roach-storm",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Apache Kafka to Google Pub/Sub Gateway, API controlled",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -50,6 +50,7 @@
     "moment": "~2.24.0",
     "mongoose": "~5.4.19",
     "prom-client": "~11.2.1",
+    "ramda": "^0.26.1",
     "sinek": "~6.27.2"
   },
   "devDependencies": {
@@ -62,6 +63,7 @@
     "@types/murmurhash": "~0.0.1",
     "@types/node": "~11.11.1",
     "@types/p-defer": "^1.0.3",
+    "@types/ramda": "^0.26.3",
     "@types/uuid": "~3.4.4",
     "mocha": "~6.0.2",
     "tslint": "~5.13.1",

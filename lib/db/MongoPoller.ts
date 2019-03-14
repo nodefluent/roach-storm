@@ -69,7 +69,7 @@ export default class MongoPoller extends EventEmitter {
         const topicConfigs = await this.topicConfigModel.list();
         this.metrics.set("configured_topics", topicConfigs.length);
 
-        const topics = topicConfigs.map((topicConfig) => topicConfig.topic);
+        const topics = topicConfigs.map((topicConfig) => topicConfig.sourceTopic);
         const newTopicConfigHash = Discovery.arrayToFixedHash(topics);
         if (this.topicConfigHash !== newTopicConfigHash) {
             this.topicConfigHash = newTopicConfigHash;

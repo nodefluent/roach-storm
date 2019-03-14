@@ -1,4 +1,5 @@
 import * as Debug from "debug";
+import * as R from "ramda";
 import * as moment from "moment";
 const debug = Debug("roach:handler");
 
@@ -6,7 +7,7 @@ import RoachStorm from "./RoachStorm";
 import { KafkaMessage, SortedMessageBatch } from "sinek";
 import MongoPoller from "./db/MongoPoller";
 import { Metrics } from "./Metrics";
-import { TopicConfig } from "./interfaces/TopicConfig";
+import { TopicConfig, TopicConfigPipe } from "./interfaces/TopicConfig";
 import MongoWrapper from "./db/MongoWrapper";
 import PubSubHandler from "./PubSubHandler";
 import { ParsedMessage } from "./interfaces";
@@ -29,7 +30,7 @@ export default class MessageHandler {
 
         const topicConfigs = this.mongoPoller.getCollected().topicConfigs;
         for (let i = topicConfigs.length - 1; i >= 0; i--) {
-            if (topicConfigs[i].topic === topic) {
+            if (topicConfigs[i].sourceTopic === topic) {
                 return topicConfigs[i];
             }
         }
@@ -41,7 +42,7 @@ export default class MessageHandler {
         return topic.replace(/-/g, "_");
     }
 
-    public handleSortedMessageBatch(sortedBatch: SortedMessageBatch): Promise<string[][][]> {
+    public handleSortedMessageBatch(sortedBatch: SortedMessageBatch): Promise<string[][][][]> {
 
         // parallel processing on topic level
         const topicPromises = Object.keys(sortedBatch).map((topic: string) => {
@@ -57,10 +58,12 @@ export default class MessageHandler {
 
                 // sequential processing on message level (to respect ORDER)
                 const messages = sortedBatch[topic][partition]
-                    .map((message) => this.handleMessage(message, topicConfig))
+                    .map((message) => this.handleMessage(message, topicConfig.parseAsJson))
                     .filter((message) => !!message) as ParsedMessage[];
 
-                return this.publishMessagesChunkified(messages, topicConfig.targetTopic, topicConfig.chunkSize);
+                return Promise.all(topicConfig.pipes.map((pipe) => {
+                    return this.processMessagesOnPipe(pipe, messages);
+                }));
             });
 
             // wait until all partitions of this topic are processed and commit its offset
@@ -68,6 +71,40 @@ export default class MessageHandler {
         });
 
         return Promise.all(topicPromises);
+    }
+
+    private async processMessagesOnPipe(pipe: TopicConfigPipe, messages: ParsedMessage[]) {
+
+        if (!pipe.publishTombstones) {
+            messages = messages.filter((message) => {
+                return !(message.value === null || message.value === "null" || typeof message.value === "undefined");
+            });
+        }
+
+        if (!pipe.filter || Object.keys(pipe.filter).length === 0) {
+            return this.publishMessagesChunkified(messages, pipe.targetTopic, pipe.chunkSize);
+        }
+
+        const messageFilter = R.allPass(Object.keys(pipe.filter).map((key: string) => {
+
+            if (key.indexOf("[") !== -1 || key.indexOf("]") !== -1) {
+                throw new Error("Character not allowed in filter key [], only dot strings as path allowed.");
+            }
+
+            if (Array.isArray(pipe.filter[key]) || (typeof pipe.filter[key] === "object"
+                && pipe.filter[key] !== null)) {
+                throw new Error(
+                    "Filter field values, must not be arrays or objects, please resolve via flat string paths. " + key);
+            }
+
+            return R.pathEq(key.split("."), pipe.filter[key]);
+        }));
+
+        messages = messages.filter((message) => {
+            return messageFilter(message);
+        });
+
+        return this.publishMessagesChunkified(messages, pipe.targetTopic, pipe.chunkSize);
     }
 
     private publishMessagesChunkified(messages: ParsedMessage[], targetTopic: string, chunkSize: number = 1):
@@ -92,7 +129,7 @@ export default class MessageHandler {
         return Promise.all(chunkPromises);
     }
 
-    private handleMessage(message: KafkaMessage, topicConfig: TopicConfig): ParsedMessage | null {
+    private handleMessage(message: KafkaMessage, parseAsJson: boolean = false): ParsedMessage | null {
 
         this.metrics.inc("processed_messages");
 
@@ -128,7 +165,7 @@ export default class MessageHandler {
         // in case the value does not contain a JSON payload, it should be stored as RAW (message.value) representative
         // NOTE: Also check if topic shold be queryable, otherwise message value should be stored as buffer
         let alteredMessageValue = null;
-        if (message.value && topicConfig.parseAsJson) {
+        if (message.value && parseAsJson) {
 
             if (Buffer.isBuffer(message.value)) {
                 alteredMessageValue = message.value.toString("utf8");
@@ -144,7 +181,7 @@ export default class MessageHandler {
             }
         }
         // elif - always ensure we store value as buffer
-        if (message.value && !topicConfig.parseAsJson) {
+        if (message.value && !parseAsJson) {
             if (Buffer.isBuffer(message.value)) {
                 alteredMessageValue = message.value;
             } else {
@@ -157,7 +194,7 @@ export default class MessageHandler {
         }
 
         const parsedMessage: ParsedMessage = {
-            key: topicConfig.parseAsJson && keyAsString ? keyAsString : keyAsBuffer,
+            key: parseAsJson && keyAsString ? keyAsString : keyAsBuffer,
             timestamp: messageHasTimestamp ? (message as any).timestamp : timeOfStoring,
             partition: message.partition,
             offset: message.offset,

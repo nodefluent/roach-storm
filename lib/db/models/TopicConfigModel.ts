@@ -1,5 +1,6 @@
 import * as Debug from "debug";
-import { TopicConfig } from "../../interfaces/TopicConfig";
+import * as Mongoose from "mongoose";
+import { TopicConfig, TopicConfigPipe } from "../../interfaces/TopicConfig";
 const debug = Debug("roach:model:topicconfig");
 
 import RoachStorm from "../../RoachStorm";
@@ -23,16 +24,22 @@ export class TopicConfigModel {
     public registerModel(mongoose: any, schemaConstructor: any) {
 
         const schemaDefinition = {
-            topic: String,
-            timestamp: Number,
+            sourceTopic: String,
             parseAsJson: Boolean,
-            targetTopic: String,
-            chunkSize: Number,
+            timestamp: Number,
+            pipes: [
+                {
+                    targetTopic: String,
+                    filter: Mongoose.Schema.Types.Mixed,
+                    chunkSize: Number,
+                    publishTombstones: Boolean,
+                },
+            ],
         };
 
         const schema = new schemaConstructor(schemaDefinition);
 
-        schema.index({ topic: 1, type: -1});
+        schema.index({ sourceTopic: 1, type: -1});
 
         this.model = mongoose.model(this.name, schema);
 
@@ -54,38 +61,31 @@ export class TopicConfigModel {
 
     public async listAsTopics(): Promise<string[]> {
         const topicConfigs = await this.list();
-        return topicConfigs.map((topicConfig) => topicConfig.topic);
+        return topicConfigs.map((topicConfig) => topicConfig.sourceTopic);
     }
 
     public list(): Promise<TopicConfig[]> {
-        return this.model.find({}).lean().exec().then((topicConfigs: any[]) => {
-            return topicConfigs.map((topicConfig: any) => {
-
-                const responseTopicConfig: TopicConfig = {
-                    topic: topicConfig.topic,
-                    timestamp: topicConfig.timestamp,
-                    parseAsJson: topicConfig.parseAsJson,
-                    targetTopic: topicConfig.targetTopic,
-                };
-
-                return responseTopicConfig;
-            });
-        });
+        return this.model.find({}).lean().exec();
     }
 
-    public upsert(topic: string, targetTopic: string, chunkSize: number = 1,
-                  timestamp: number = Date.now(), parseAsJson: boolean = false): Promise<TopicConfig> {
+    public upsert(sourceTopic: string, pipes: TopicConfigPipe[] = [],
+                  timestamp: number = Date.now(), parseAsJson: boolean = true): Promise<TopicConfig> {
+
+        if (!pipes || !pipes.length) {
+            throw new Error("Pipes must be set.");
+        }
+
+        pipes.forEach((pipe) => this.validatePipe(pipe));
 
         const document = {
-            topic,
+            sourceTopic,
             timestamp,
+            pipes,
             parseAsJson,
-            targetTopic,
-            chunkSize,
         };
 
         const query = {
-            topic,
+            sourceTopic,
         };
 
         const queryOptions = {
@@ -102,5 +102,33 @@ export class TopicConfigModel {
     public truncateCollection() {
         debug("Truncating collection");
         return this.model.deleteMany({}).exec();
+    }
+
+    private validatePipe(pipe: TopicConfigPipe) {
+
+        if (!pipe || typeof pipe !== "object") {
+            throw new Error("Pipe is not an object");
+        }
+
+        if (!pipe.targetTopic || typeof pipe.targetTopic !== "string") {
+            throw new Error("Pipe has no targetTopic.");
+        }
+
+        if (!pipe.filter) {
+            return;
+        }
+
+        Object.keys(pipe.filter).map((key: string) => {
+
+            if (key.indexOf("[") !== -1 || key.indexOf("]") !== -1) {
+                throw new Error("Character not allowed in filter key [], only dot strings as path allowed.");
+            }
+
+            if (Array.isArray(pipe.filter[key]) || (typeof pipe.filter[key] === "object"
+                && pipe.filter[key] !== null)) {
+                throw new Error(
+                    "Filter field values, must not be arrays or objects, please resolve via flat string paths. " + key);
+            }
+        });
     }
 }

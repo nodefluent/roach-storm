@@ -66,17 +66,17 @@ const routeTopicConfig = (roachStorm: RoachStorm) => {
         }
 
         try {
-            const { topic, parseAsJson, targetTopic, chunkSize = 1 } = req.body;
+            const { sourceTopic, pipes, parseAsJson = true } = req.body;
 
-            const topicConfig = await topicConfigModel.get(topic);
+            const topicConfig = await topicConfigModel.get(sourceTopic);
             if (topicConfig) {
                 res.status(400).json({
-                    error: topic + " topic configuration already exists.",
+                    error: sourceTopic + " topic configuration already exists.",
                 });
                 return;
             }
 
-            res.status(202).json(await topicConfigModel.upsert(topic, targetTopic, chunkSize, undefined, parseAsJson));
+            res.status(202).json(await topicConfigModel.upsert(sourceTopic, pipes, undefined, parseAsJson));
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,
@@ -94,8 +94,8 @@ const routeTopicConfig = (roachStorm: RoachStorm) => {
         }
 
         try {
-            const { topic, parseAsJson, targetTopic, chunkSize = 1 } = req.body;
-            res.status(202).json(await topicConfigModel.upsert(topic, targetTopic, chunkSize, undefined, parseAsJson));
+            const { sourceTopic, pipes, parseAsJson = true } = req.body;
+            res.status(202).json(await topicConfigModel.upsert(sourceTopic, pipes, undefined, parseAsJson));
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,
@@ -122,8 +122,8 @@ const routeTopicConfig = (roachStorm: RoachStorm) => {
         try {
 
             await Promise.map(req.body.topics, ((topicConfig: any) => {
-                const { topic, parseAsJson, targetTopic, chunkSize = 1 } = topicConfig;
-                return topicConfigModel.upsert(topic, targetTopic, chunkSize, undefined, parseAsJson);
+                const { sourceTopic, pipes, parseAsJson = true } = topicConfig;
+                return topicConfigModel.upsert(sourceTopic, pipes, undefined, parseAsJson);
             }), {concurrency: 1});
 
             res.status(200).json(await topicConfigModel.list());

@@ -64,20 +64,66 @@ But it wont start transferring topics/messages yet. You will have to configure t
 and processed.
 
 You can do that by providing a small configuraton in a `POST /api/config/topic` call.
-You will have to provide the following information in the body `{ topic, parseAsJson, targetTopic, chunkSize }`.
-
-* `topic` (string) (is required) is the name of the Kafka topic (you can fetch available topics via `GET /api/info/topics/available`)
-* `parseAsJson` (boolean) (default is false) if this is false the message (key and value) fields are passed as Buffers, in case you set this
-to true, the message key will be passed as string (if possible) and the value will be passed as parsed JSON body (if possible).
-* `targetTopic` (string) (is required) is the name for the Google PubSub topic where the message should be published to
-* `chunkSize` (number) (default is 1) the amount of kafka messages (based on topic and partition) to batch into a single
-pub sub message
+You will have to provide the following information in the body `{ sourceTopic, parseAsJson, pipes }`.
 
 If you configure a topic, it will be consumed from earliest.
 
 **Please note** that any changes on the topic-config resource will take a few seconds to be polled and applied to all roach-storm instances.
 
 **Please note** that roach-storm will not create PubSub topics for you, you will have to create the topics beforehand.
+
+#### TopicConfig
+
+* `sourceTopic` (string) (is required) is the name of the Kafka topic (you can fetch available topics via `GET /api/info/topics/available`)
+* `parseAsJson` (boolean) (default is true) if this is false the message (key and value) fields are passed as Buffers
+* `pipes` (Array[Pipe]) (is required) defines where the kafka messages should be published too, of course you can
+add multiple pipes for the same topic to filter and publish specific messages to different pubsub topics
+
+#### TopicConfigPipe
+
+* `targetTopic` (string) (is required) is the name for the Google PubSub topic where the message should be published to
+* `chunkSize` (number) (default is 1) the amount of kafka messages (based on topic and partition) to batch into a single
+pub sub message
+* `publishTombstones` (boolean) (default is false) if null value kafka messages should be published
+* `filter` (object) (default is undefined) using this object a filter can be build for a pipe, this way you can
+publish specific messages to a specific pubsub topic (this can save a lot of costs) as you do not waste function triggers
+for example:
+
+##### Filter Example
+
+Assume the following messages on your topic: `{ value: { payload: { eventType: "my-cool-type", version: 5  }}}`
+You can add a filter to a pipe to publish only these certain messages:
+
+```javascript
+const topicConfig = {
+  sourceTopic: "my-topic",
+  parseAsJson: true, // please always do this, if you want to use filters on values
+  pipes: [
+    {
+      targetTopic: "pubsub-all-with-version-five",
+      chunkSize: 5,
+      publishTombstones: false,
+      filter: {
+        "value.payload.version": 5,
+      },
+    },
+    {
+      targetTopic: "pubsub-cool-with-version-six",
+      chunkSize: 5,
+      publishTombstones: false,
+      filter: {
+        "value.payload.eventType": "my-cool-type",
+        "value.payload.version": 6,
+      },
+    },
+  ],
+};
+```
+
+In this scenario roachstorm will consume the topic `my-topic` filter out all tombstone messages
+and publish all kafka messages with payload.version equal to 5 to pubsub topic `pubsub-all-with-version-five`
+and at the same time all kafka messages with payload.eventType my-cool-type and payload.version equal to 6
+to pubsub topic `pubsub-cool-with-version-six`.
 
 ## Setup Info
 
