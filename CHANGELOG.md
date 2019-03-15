@@ -1,5 +1,9 @@
 # roach-storm CHANGELOG
 
+## 2019-03-15, Version 0.7.0
+
+* updated dependencies
+
 ## 2019-03-14, Version 0.6.0
 
 * **BREAKING** changed the TopicConfig resource

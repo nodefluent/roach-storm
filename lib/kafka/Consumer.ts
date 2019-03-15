@@ -60,7 +60,7 @@ export default class Consumer {
 
         this.consumer.consume(async (messages: any, callback) => {
             await this.processMessagesWithRetry(messages as SortedMessageBatch);
-            callback(null);
+            callback();
         }, false, false, this.config.batchOptions);
 
         this.consumer.enableAnalytics({
