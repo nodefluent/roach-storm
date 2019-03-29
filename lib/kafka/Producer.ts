@@ -55,7 +55,7 @@ export default class Producer {
             value = Buffer.from(value);
         }
 
-        this.roachStorm.metrics.inc(`kafka_msg_out_´${(MessageHandler.cleanTopicNameForMetrics(topic))}`);
+        this.roachStorm.metrics.inc(`kafka_msg_out_${(MessageHandler.cleanTopicNameForMetrics(topic))}`);
         this.producedLately++;
         return this.producer.send(topic, value, (partition as any), (key as any));
     }
@@ -66,7 +66,7 @@ export default class Producer {
             return Promise.resolve(null);
         }
 
-        this.roachStorm.metrics.inc(`kafka_tomb_out_´${(MessageHandler.cleanTopicNameForMetrics(topic))}`);
+        this.roachStorm.metrics.inc(`kafka_tomb_out_${(MessageHandler.cleanTopicNameForMetrics(topic))}`);
         this.producedLately++;
         return this.producer.tombstone(topic, key, partition);
     }

@@ -44,9 +44,11 @@ export default class PubSubToKafka {
 
     private messageHandler(message: Message) {
 
-        this.roachStorm.metrics.inc(`pubsub_msg_in_${(MessageHandler.cleanTopicNameForMetrics(
+        const topicName = MessageHandler.cleanTopicNameForMetrics(
             this.roachStorm.config.pubSubToKafkaTopicName || "missing_name",
-        ))}`);
+        );
+
+        this.roachStorm.metrics.inc(`pubsub_msg_in_${topicName}`);
 
         try {
             let messages = JSON.parse(message.data.toString("utf8"));
@@ -76,23 +78,17 @@ export default class PubSubToKafka {
 
             })).then((_) => {
                 message.ack();
-                this.roachStorm.metrics.inc(`pubsub_ack_${(MessageHandler.cleanTopicNameForMetrics(
-                    this.roachStorm.config.pubSubToKafkaTopicName || "missing_name",
-                ))}`);
+                this.roachStorm.metrics.inc(`pubsub_ack_${topicName}`);
             }).catch((error) => {
                 debug("Failed to handle kafka messages from pubsub:", error.message);
                 // ack here, message consumption will stop
                 debug("You will have to restart this instance after connection has been fixed.");
-                this.roachStorm.metrics.inc(`pubsub_msg_error_${(MessageHandler.cleanTopicNameForMetrics(
-                    this.roachStorm.config.pubSubToKafkaTopicName || "missing_name",
-                ))}`);
+                this.roachStorm.metrics.inc(`pubsub_msg_error_${topicName}`);
             });
         } catch (error) {
             debug("Failed to parse pubsub value:", error.message, message.data);
             message.ack();
-            this.roachStorm.metrics.inc(`pubsub_msg_parse_error_${(MessageHandler.cleanTopicNameForMetrics(
-                this.roachStorm.config.pubSubToKafkaTopicName || "missing_name",
-            ))}`);
+            this.roachStorm.metrics.inc(`pubsub_msg_parse_error_${topicName}`);
         }
     }
 }

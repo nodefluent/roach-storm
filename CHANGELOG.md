@@ -1,5 +1,10 @@
 # roach-storm CHANGELOG
 
+## 2019-03-29, Version 0.8.0-0.8.1
+
+* updated dependencies
+* added option to mirror messages from pubsub topic to kafka topics
+
 ## 2019-03-15, Version 0.7.0
 
 * updated dependencies

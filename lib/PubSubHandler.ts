@@ -20,7 +20,7 @@ export default class PubSubHandler {
             .topic(topic)
             .publish(Buffer.from(message));
 
-        this.roachStorm.metrics.inc(`pubsub_msg_out_´${(MessageHandler.cleanTopicNameForMetrics(topic))}`);
+        this.roachStorm.metrics.inc(`pubsub_msg_out_${(MessageHandler.cleanTopicNameForMetrics(topic))}`);
         return messageId;
     }
 
