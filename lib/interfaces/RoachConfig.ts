@@ -8,4 +8,5 @@ export interface RoachConfig {
     mongo: MongoConfig;
     http: HttpConfig;
     pubSubConfig: any;
+    pubSubToKafkaTopicName?: string | null;
 }

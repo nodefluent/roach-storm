@@ -125,6 +125,28 @@ and publish all kafka messages with payload.version equal to 5 to pubsub topic `
 and at the same time all kafka messages with payload.eventType my-cool-type and payload.version equal to 6
 to pubsub topic `pubsub-cool-with-version-six`.
 
+## Defining a Bridge from PubSub to Apache Kafka
+
+roach-storm is also able to move publish events from pubsub topics to Apache Kafka.
+You can configure a mirror pubsub topic that roach-storm will subscribe to (during start)
+by setting the config field: `pubSubToKafkaTopicName` (if you leave it empty or set it to null there
+will be no mirroring from pubsub to kafka, only from kafka to pubsub).
+
+The pubsub topic should contain events with data like so:
+```javascript
+event.data = Buffer.from(JSON.stringify([
+  {
+    topic: "a-target-kafka-topic", // required
+    value: "some value", // if set to null and key is present a tombstone messages will be produced
+    key: null, // optional
+    partition: null, // optional
+  }, // you can pass multiple messages for different topics and partitions in the same pubsub message
+))];
+```
+
+If a produce error occures, roachstorm will not send pubsub acks and the subscription will halt.
+Errors, writes and acks are exposed via metrics.
+
 ## Setup Info
 
 ### Deployment & Scaling

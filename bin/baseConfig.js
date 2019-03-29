@@ -48,4 +48,5 @@ module.exports = {
     pubSubConfig: {
         projectId: "base-google-cloud-project-id",
     },
+    pubSubToKafkaTopicName: null,
 };

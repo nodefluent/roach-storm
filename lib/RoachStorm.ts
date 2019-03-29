@@ -7,8 +7,10 @@ import Discovery from "./kafka/Discovery";
 import HttpServer from "./api/HttpServer";
 import MessageHandler from "./MessageHandler";
 import Consumer from "./kafka/Consumer";
+import Producer from "./kafka/Producer";
 import { Metrics } from "./Metrics";
 import PubSubHandler from "./PubSubHandler";
+import PubSubToKafka from "./PubSubToKafka";
 
 import { RoachConfig } from "./interfaces";
 
@@ -20,12 +22,14 @@ export default class RoachStorm {
 
     public readonly config: RoachConfig;
     public readonly consumer: Consumer;
+    public readonly producer: Producer;
     public readonly messageHandler: MessageHandler;
     public readonly mongoWrapper: MongoWrapper;
     public readonly mongoPoller: MongoPoller;
     public readonly discovery: Discovery;
     public readonly metrics: Metrics;
     public readonly pubSubHandler: PubSubHandler;
+    public readonly pubSubToKafka: PubSubToKafka;
 
     private alive: boolean = true;
     private ready: boolean = false;
@@ -43,8 +47,10 @@ export default class RoachStorm {
         this.mongoPoller = new MongoPoller(this.mongoWrapper, this.metrics);
         this.httpServer = new HttpServer(this.config.http, this);
         this.consumer = new Consumer(this.config.kafka, this);
+        this.producer = new Producer(this.config.kafka, this);
         this.pubSubHandler = new PubSubHandler(this.config, this);
         this.messageHandler = new MessageHandler(this);
+        this.pubSubToKafka = new PubSubToKafka(this);
     }
 
     private shutdownOnErrorIfNotProduction() {
@@ -110,6 +116,10 @@ export default class RoachStorm {
         await this.mongoWrapper.start();
         await this.consumer.start();
 
+        if (this.config.pubSubToKafkaTopicName) {
+            await this.producer.start();
+        }
+
         this.mongoPoller.on("error", (error) => {
             debug("MongoDB polling error: " + error.message, error.stack);
         });
@@ -123,6 +133,10 @@ export default class RoachStorm {
         await this.mongoPoller.start(30000);
         await this.httpServer.start();
 
+        if (this.config.pubSubToKafkaTopicName) {
+            await this.pubSubToKafka.start();
+        }
+
         this.setReadyState(true);
         debug("Running..");
     }
@@ -133,10 +147,12 @@ export default class RoachStorm {
         this.setAliveState(false);
         this.setReadyState(false);
 
+        await this.pubSubToKafka.close();
         this.mongoPoller.close();
         this.discovery.close();
         this.httpServer.close();
         await this.consumer.close();
+        await this.producer.close();
         this.mongoWrapper.close();
         this.metrics.close();
     }

@@ -53,6 +53,7 @@ const roachConfig = {
     pubSubConfig: {
         projectId: "sample-google-cloud-project-id",
     },
+    pubSubToKafkaTopicName: null,
 };
 
 export {
