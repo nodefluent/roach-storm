@@ -55,7 +55,7 @@ export class Metrics {
             name: `${key}`,
             help: `${key}_help`,
             registers: [this.register],
-            // labelNames: [],
+            labelNames: ["topic"], // TODO: this is not generic
         });
 
         return this.metrics[key];
@@ -74,7 +74,7 @@ export class Metrics {
             name: `${key}`,
             help: `${key}_help`,
             registers: [this.register],
-            // labelNames: [], // Gauges require fixed prefixes
+            labelNames: ["topic"], // TODO: this is not generic
         });
 
         return this.metrics[key] as promClient.Gauge;
