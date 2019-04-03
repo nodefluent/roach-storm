@@ -1,5 +1,12 @@
 # roach-storm CHANGELOG
 
+## 2019-04-03, Version 0.9.0
+
+* updated dependencies
+* fixed bug in topic-config deletion
+* switched metrics from names to buckets
+* added ?clean=1 query option for PUT topic-config/many
+
 ## 2019-03-29, Version 0.8.0-0.8.1
 
 * updated dependencies

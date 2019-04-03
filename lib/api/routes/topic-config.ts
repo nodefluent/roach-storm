@@ -121,6 +121,10 @@ const routeTopicConfig = (roachStorm: RoachStorm) => {
 
         try {
 
+            if (req.query.clean === "1") {
+                await topicConfigModel.truncateCollection();
+            }
+
             await Promise.map(req.body.topics, ((topicConfig: any) => {
                 const { sourceTopic, pipes, parseAsJson = true } = topicConfig;
                 return topicConfigModel.upsert(sourceTopic, pipes, undefined, parseAsJson);

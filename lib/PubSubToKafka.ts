@@ -3,7 +3,6 @@ const debug = Debug("roach:roach");
 
 import RoachStorm from "./RoachStorm";
 import { Message } from "@google-cloud/pubsub";
-import MessageHandler from "./MessageHandler";
 
 export default class PubSubToKafka {
 
@@ -44,11 +43,9 @@ export default class PubSubToKafka {
 
     private messageHandler(message: Message) {
 
-        const topicName = MessageHandler.cleanTopicNameForMetrics(
-            this.roachStorm.config.pubSubToKafkaTopicName || "missing_name",
-        );
+        const topic = this.roachStorm.config.pubSubToKafkaTopicName || "missing_name";
 
-        this.roachStorm.metrics.inc(`pubsub_msg_in_${topicName}`);
+        this.roachStorm.metrics.inc(`pubsub_msg_in`, 1, { topic });
 
         try {
             let messages = JSON.parse(message.data.toString("utf8"));
@@ -78,17 +75,17 @@ export default class PubSubToKafka {
 
             })).then((_) => {
                 message.ack();
-                this.roachStorm.metrics.inc(`pubsub_ack_${topicName}`);
+                this.roachStorm.metrics.inc(`pubsub_ack`, 1, { topic });
             }).catch((error) => {
                 debug("Failed to handle kafka messages from pubsub:", error.message);
                 // ack here, message consumption will stop
                 debug("You will have to restart this instance after connection has been fixed.");
-                this.roachStorm.metrics.inc(`pubsub_msg_error_${topicName}`);
+                this.roachStorm.metrics.inc(`pubsub_msg_error`, 1, { topic });
             });
         } catch (error) {
             debug("Failed to parse pubsub value:", error.message, message.data);
             message.ack();
-            this.roachStorm.metrics.inc(`pubsub_msg_parse_error_${topicName}`);
+            this.roachStorm.metrics.inc(`pubsub_msg_parse_error`, 1, { topic });
         }
     }
 }

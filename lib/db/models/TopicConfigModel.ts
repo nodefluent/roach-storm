@@ -95,8 +95,8 @@ export class TopicConfigModel {
         return this.model.findOneAndUpdate(query, document, queryOptions).exec();
     }
 
-    public delete(topic: string) {
-        return this.model.deleteMany({topic}).exec();
+    public delete(sourceTopic: string) {
+        return this.model.deleteMany({ sourceTopic }).exec();
     }
 
     public truncateCollection() {

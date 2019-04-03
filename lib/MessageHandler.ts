@@ -38,10 +38,6 @@ export default class MessageHandler {
         return null;
     }
 
-    public static cleanTopicNameForMetrics(topic: string): string {
-        return topic.replace(/-/g, "_");
-    }
-
     public handleSortedMessageBatch(sortedBatch: SortedMessageBatch): Promise<string[][][][]> {
 
         // parallel processing on topic level
@@ -134,7 +130,7 @@ export default class MessageHandler {
         this.metrics.inc("processed_messages");
 
         if (!message || !message.topic || typeof message.topic !== "string" || typeof message.partition !== "number") {
-            this.metrics.inc(`message_dropped_${MessageHandler.cleanTopicNameForMetrics(message.topic)}`);
+            this.metrics.inc(`message_dropped`, 1, { topic: message.topic });
             debug("Dropping message because of bad format, not an object or no topic", message);
             return null;
         }

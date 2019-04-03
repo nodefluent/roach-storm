@@ -54,8 +54,7 @@ export default class Consumer {
         await this.consumer.connect();
 
         this.consumer.on("message", (message) => {
-            const topicName = MessageHandler.cleanTopicNameForMetrics(message.topic);
-            this.roachStorm.metrics.inc(`kafka_msg_in_${topicName}`);
+            this.roachStorm.metrics.inc(`kafka_msg_in`, 1, { topic: message.topic });
             this.consumedLately++;
         });
 
