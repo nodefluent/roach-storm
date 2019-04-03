@@ -28,6 +28,7 @@ const routeRoot = (roachStorm: RoachStorm) => {
                 "/api/info",
                 "/api/config",
                 "/api/state",
+                "/api/produce",
             ],
         });
     });

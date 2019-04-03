@@ -9,7 +9,7 @@ import * as pjson from "../../package.json";
 
 import RoachStorm from "../RoachStorm";
 import { HttpConfig } from "../interfaces";
-import { routeRoot, routeTopicConfig, routeInfo, routeState } from "./routes";
+import { routeRoot, routeTopicConfig, routeInfo, routeState, routeProduce } from "./routes";
 
 import AccessControll from "./AccessControll";
 
@@ -86,6 +86,7 @@ export default class HttpServer {
         app.use("/api/config", routeTopicConfig(this.roachStorm));
         app.use("/api/info", routeInfo(this.roachStorm));
         app.use("/api/state", routeState(this.roachStorm));
+        app.use("/api/produce", routeProduce(this.roachStorm));
 
         this.server = await new Promise((resolve, reject) => {
             let server: any = null;
