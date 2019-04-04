@@ -26,7 +26,8 @@ export default class PubSubToMetrics {
         }
 
         this.subscriptionRef = await
-            this.roachStorm.pubSubHandler.subscribe(this.roachStorm.config.gcf!.metrics!.pubSubMetricTopic);
+            this.roachStorm.pubSubHandler.subscribe(this.roachStorm.config.gcf!.metrics!.pubSubMetricTopic,
+                "roach-storm-metrics-v1");
 
         this.messageHandlerRef = this.messageHandler.bind(this);
         this.subscriptionRef.on("message", this.messageHandlerRef);
