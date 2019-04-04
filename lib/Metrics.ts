@@ -7,17 +7,20 @@ const UNDERSCORE_REGEX = /-/g;
 export class Metrics {
 
     private prefix: string;
+    private defaultCounterLabels: string[];
+    private defaultGaugeLabels: string[];
     private register: promClient.Registry;
     private defaultMetricsIntv!: number | NodeJS.Timer;
     private metrics: {
         [key: string]: promClient.Counter | promClient.Gauge;
     };
 
-    constructor(prefix: string = "") {
-
+    constructor(prefix: string = "", defaultCounterLabels: string[] = [], defaultGaugeLabels: string[] = []) {
         this.prefix = prefix;
+        this.defaultCounterLabels = defaultCounterLabels;
+        this.defaultGaugeLabels = defaultGaugeLabels;
         this.register = new promRegistry();
-        this.metrics = {}; // Stores metric objects
+        this.metrics = {};
     }
 
     public exportType() {
@@ -55,7 +58,7 @@ export class Metrics {
             name: `${key}`,
             help: `${key}_help`,
             registers: [this.register],
-            labelNames: ["topic"], // TODO: this is not generic
+            labelNames: [...[], ...this.defaultCounterLabels],
         });
 
         return this.metrics[key];
@@ -74,7 +77,7 @@ export class Metrics {
             name: `${key}`,
             help: `${key}_help`,
             registers: [this.register],
-            labelNames: ["topic"], // TODO: this is not generic
+            labelNames: [...[], ...this.defaultGaugeLabels],
         });
 
         return this.metrics[key] as promClient.Gauge;
@@ -85,13 +88,17 @@ export class Metrics {
         key = this.cleanMetricName(key);
         const prefix = this.prefix;
         const fullKey = prefix ? `${prefix}_${key}` : key;
-        const counter = this.getCounter(fullKey);
 
-        counter.inc(
-            this.cleanLabels(labels),
-            val,
-            Date.now(),
-        );
+        try {
+            const counter = this.getCounter(fullKey);
+            counter.inc(
+                this.cleanLabels(labels),
+                val,
+                Date.now(),
+            );
+        } catch (error) {
+            // empty
+        }
     }
 
     public set(key: string, val: number, labels: { [labelName: string]: string } = {}) {
@@ -103,13 +110,17 @@ export class Metrics {
         key = this.cleanMetricName(key);
         const prefix = this.prefix;
         const fullKey = prefix ? `${prefix}_${key}` : key;
-        const gauge = this.getGauge(fullKey);
 
-        gauge.set(
-            this.cleanLabels(labels),
-            val,
-            Date.now(),
-        );
+        try {
+            const gauge = this.getGauge(fullKey);
+            gauge.set(
+                this.cleanLabels(labels),
+                val,
+                Date.now(),
+            );
+        } catch (error) {
+            // empty
+        }
     }
 
     public registerDefault() {

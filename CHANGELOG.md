@@ -1,5 +1,9 @@
 # roach-storm CHANGELOG
 
+## 2019-04-04, Version 0.11.0
+
+* added pubsub to metrics functionality
+
 ## 2019-04-03, Version 0.10.0
 
 * added endpoint to make test calls to pubsub topics (easier)

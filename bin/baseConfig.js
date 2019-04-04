@@ -49,4 +49,12 @@ module.exports = {
         projectId: "base-google-cloud-project-id",
     },
     pubSubToKafkaTopicName: null,
+    gcf: {
+        metrics: {
+            pubSubMetricTopic: null,
+            counterLabels: [],
+            gaugeLabels: [],
+            prefix: "gcf_roach",
+        },
+    },
 };

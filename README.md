@@ -10,13 +10,16 @@
 
 ## What
 
-Apache Kafka to Google Pub/Sub Gateway, API controlled
+Apache Kafka to Google Pub/Sub Gateway, API controlled.
+Helper for Google Cloud Function Services that are built upon Apache Kafka.
 
 ## How
 
 You can manage topics to be transferred on the fly via `/api/topic-config` and 
 roach-storm will keep track of anything that goes through your Apache Kafka cluster.
 Messages are filtered and published on Google Cloud Pub/Sub service.
+It also ships a few additional tools to make the Google Cloud Functions live easier,
+e.g. handling metrics or producing back to Apache Kafka.
 
 ## Why
 
@@ -25,7 +28,7 @@ to be triggered or integrated into Apache Kafka directly.
 
 ## Requirements
 
-* node.js >= 9.x.x (we suggest >= 10.11.x)
+* Node.js >= 9.x.x (we suggest >= 10.11.x)
 * Apache Kafka >= 0.11.x (we suggest >= 1.x.x)
 * MongoDB >= 3.2 (we suggest >= 4.x)
 
@@ -125,6 +128,34 @@ and publish all kafka messages with payload.version equal to 5 to pubsub topic `
 and at the same time all kafka messages with payload.eventType my-cool-type and payload.version equal to 6
 to pubsub topic `pubsub-cool-with-version-six`.
 
+## Testing filters or producing some test messages to pubsub topics
+
+You can use the `/api/produce/kafka-batch` endpoint to easily mimic some kafka messages
+that are flushed through your configured roach-storm topics and filters and should be published
+to your configured pubsub topics.
+
+```bash
+curl -X POST \
+  http://localhost:1919/api/produce/kafka-batch \
+  -H 'Authorization: your-roach-storm-token-here' \
+  -H 'Content-Type: application/json' \
+  -H 'cache-control: no-cache' \
+  -d '{
+	"batch": {
+		"some-kafka-topic": {
+			"0": [
+				{
+					"topic": "some-kafka-topic",
+					"partition": 0,
+					"key": "cbedcd96-3de5-4649-ba5b-5788cabdb894",
+					"value": {}
+				}
+			]
+		}
+	}
+}'
+```
+
 ## Defining a Bridge from PubSub to Apache Kafka
 
 roach-storm is also able to move publish events from pubsub topics to Apache Kafka.
@@ -146,6 +177,38 @@ event.data = Buffer.from(JSON.stringify([
 
 If a produce error occures, roachstorm will not send pubsub acks and the subscription will halt.
 Errors, writes and acks are exposed via metrics.
+
+## Handling metrics from GCF
+
+By simply passing the `gcf` object in the configuration
+you can easily enable the subcription of a pubsub topic to render prometheus metrics
+along with a different set of prefixes and labels.
+
+```javascript
+gcf: {
+      metrics: {
+          pubSubMetricTopic: null,
+          counterLabels: [],
+          gaugeLabels: [],
+          prefix: "gcf_roach",
+      },
+  },
+```
+
+The pubsub topic should contain events with data like so:
+```javascript
+event.data = Buffer.from(JSON.stringify([
+  {
+    metric: "my_calls", // the name of the metric
+    type: "counter", // counter or gauge
+    value: 1, // couter increment by or gauge value set
+    labels: { "special": "bla" }, // make sure that these labels (keys) are already set in the config (counterLabels, gaugeLabels)
+  }, // you can of course sent multiple metrics per pubsub message
+))];
+```
+
+If an error occures it will be logged and internal metrics will show them, however they will be ignored afterwards
+and acks will be sent to pubsub.
 
 ## Setup Info
 

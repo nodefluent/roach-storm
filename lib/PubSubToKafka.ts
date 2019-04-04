@@ -1,5 +1,5 @@
 import * as Debug from "debug";
-const debug = Debug("roach:roach");
+const debug = Debug("roach:pubsubtokafka");
 
 import RoachStorm from "./RoachStorm";
 import { Message } from "@google-cloud/pubsub";

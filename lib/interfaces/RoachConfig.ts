@@ -9,4 +9,12 @@ export interface RoachConfig {
     http: HttpConfig;
     pubSubConfig: any;
     pubSubToKafkaTopicName?: string | null;
+    gcf?: {
+        metrics?: {
+            pubSubMetricTopic?: string | null;
+            counterLabels?: string[];
+            gaugeLabels?: string[];
+            prefix?: string;
+        };
+    };
 }

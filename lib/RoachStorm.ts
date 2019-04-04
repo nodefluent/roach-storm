@@ -11,6 +11,7 @@ import Producer from "./kafka/Producer";
 import { Metrics } from "./Metrics";
 import PubSubHandler from "./PubSubHandler";
 import PubSubToKafka from "./PubSubToKafka";
+import PubSubToMetrics from "./PubSubToMetrics";
 
 import { RoachConfig } from "./interfaces";
 
@@ -28,8 +29,10 @@ export default class RoachStorm {
     public readonly mongoPoller: MongoPoller;
     public readonly discovery: Discovery;
     public readonly metrics: Metrics;
+    public readonly gcfMetrics: Metrics | null;
     public readonly pubSubHandler: PubSubHandler;
     public readonly pubSubToKafka: PubSubToKafka;
+    public readonly pubSubToMetrics: PubSubToMetrics | null;
 
     private alive: boolean = true;
     private ready: boolean = false;
@@ -41,7 +44,17 @@ export default class RoachStorm {
         }
 
         this.config = config;
-        this.metrics = new Metrics("roach");
+        this.metrics = new Metrics("roach", ["topic"], ["topic"]);
+
+        if (this.config.gcf && this.config.gcf.metrics && this.config.gcf.metrics.pubSubMetricTopic) {
+            this.gcfMetrics = new Metrics(this.config.gcf.metrics.prefix || "gcf_roach",
+                this.config.gcf.metrics.counterLabels, this.config.gcf.metrics.gaugeLabels);
+            this.pubSubToMetrics = new PubSubToMetrics(this);
+        } else {
+            this.gcfMetrics = null;
+            this.pubSubToMetrics = null;
+        }
+
         this.discovery = new Discovery(this.config.discovery, this.metrics);
         this.mongoWrapper = new MongoWrapper(this.config.mongo, this);
         this.mongoPoller = new MongoPoller(this.mongoWrapper, this.metrics);
@@ -80,11 +93,6 @@ export default class RoachStorm {
         process.on("SIGINT", this.shutdownGracefully.bind(this));
         process.on("SIGUSR1", this.shutdownGracefully.bind(this));
         process.on("SIGUSR2", this.shutdownGracefully.bind(this));
-
-        /*
-        process.on("warning", (warning: Error) => {
-            debug("Warning:", warning.message);
-        }); */
 
         process.on("uncaughtException", (error: Error) => {
             debug("Unhandled Exception: ", error.message, error.stack);
@@ -137,6 +145,10 @@ export default class RoachStorm {
             await this.pubSubToKafka.start();
         }
 
+        if (this.pubSubToMetrics) {
+            await this.pubSubToMetrics.start();
+        }
+
         this.setReadyState(true);
         debug("Running..");
     }
@@ -148,6 +160,10 @@ export default class RoachStorm {
         this.setReadyState(false);
 
         await this.pubSubToKafka.close();
+        if (this.pubSubToMetrics) {
+            await this.pubSubToMetrics.close();
+        }
+
         this.mongoPoller.close();
         this.discovery.close();
         this.httpServer.close();
@@ -155,6 +171,10 @@ export default class RoachStorm {
         await this.producer.close();
         this.mongoWrapper.close();
         this.metrics.close();
+
+        if (this.gcfMetrics) {
+            this.gcfMetrics.close();
+        }
     }
 
     public static isProduction(): boolean {

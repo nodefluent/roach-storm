@@ -46,8 +46,15 @@ const routeRoot = (roachStorm: RoachStorm) => {
     });
 
     router.get("/metrics", (req, res) => {
+
         res.set("content-type", roachStorm.metrics.exportType());
-        res.end(roachStorm.metrics.exportMetrics());
+        res.write(roachStorm.metrics.exportMetrics());
+
+        if (roachStorm.gcfMetrics) {
+            res.write(roachStorm.gcfMetrics.exportMetrics());
+        }
+
+        res.end();
     });
 
     return router;

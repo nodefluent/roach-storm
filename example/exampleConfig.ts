@@ -54,6 +54,14 @@ const roachConfig = {
         projectId: "sample-google-cloud-project-id",
     },
     pubSubToKafkaTopicName: null,
+    gcf: {
+        metrics: {
+            pubSubMetricTopic: null,
+            counterLabels: [],
+            gaugeLabels: [],
+            prefix: "gcf_roach",
+        },
+    },
 };
 
 export {
