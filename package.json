@@ -54,7 +54,7 @@
     "debug": "~4.1.1",
     "express": "~4.16.4",
     "moment": "~2.24.0",
-    "mongoose": "~5.4.21",
+    "mongoose": "~5.7.5",
     "prom-client": "^11.3.0",
     "ramda": "^0.26.1",
     "sinek": "~7.29.2"
